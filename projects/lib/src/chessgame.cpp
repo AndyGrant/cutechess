@@ -29,27 +29,18 @@ QString evalString(const MoveEvaluation& eval)
 {
 	if (eval.isBookEval())
 		return "book";
+
 	if (eval.isEmpty())
 		return QString();
 
 	QString str = eval.scoreText();
-	if (eval.depth() > 0)
-		str += "/" + QString::number(eval.depth()) + " ";
 
-	int t = eval.time();
-	if (t == 0)
-		return str + "0s";
+	str += " " + QString::number(std::max(eval.depth(), 0));
+    str += "/" + QString::number(std::max(eval.selectiveDepth(), 0));
+    str += " " + QString::number(std::max(eval.time(), 0));
+    str += " " + QString::number(std::max(eval.nodeCount(), quint64(0)));
 
-	int precision = 0;
-	if (t < 100)
-		precision = 3;
-	else if (t < 1000)
-		precision = 2;
-	else if (t < 10000)
-		precision = 1;
-	str += QString::number(double(t / 1000.0), 'f', precision) + 's';
-
-	return str;
+    return str;
 }
 
 } // anonymous namespace
@@ -171,7 +162,7 @@ void ChessGame::stop(bool emitMoveChanged)
 		finish();
 		return;
 	}
-	
+
 	QDateTime gameEndTime = QDateTime::currentDateTime();
 
 	initializePgn();
@@ -744,13 +735,13 @@ void ChessGame::startGame()
 	{
 		Chess::Move move(m_moves.at(i));
 		Q_ASSERT(m_board->isLegalMove(move));
-		
+
 		addPgnMove(move, "book");
 
 		playerToMove()->makeBookMove(move);
 		playerToWait()->makeMove(move);
 		m_board->makeMove(move);
-		
+
 		emitLastMove();
 
 		if (!m_board->result().isNone())
@@ -761,7 +752,7 @@ void ChessGame::startGame()
 			return;
 		}
 	}
-	
+
 	for (int i = 0; i < 2; i++)
 	{
 		connect(m_player[i], SIGNAL(moveMade(Chess::Move)),
@@ -770,6 +761,6 @@ void ChessGame::startGame()
 			connect(m_player[i], SIGNAL(wokeUp()),
 				this, SLOT(resume()));
 	}
-	
+
 	startTurn();
 }
